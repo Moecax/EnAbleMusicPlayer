@@ -210,6 +210,16 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
                 mediaSessionPlay()
                 setPlayPause(SongState.playing)
             }
+
+            override fun onSkipToNext() {
+                super.onSkipToNext()
+                setNextPrevious(next = true)
+            }
+
+            override fun onSkipToPrevious() {
+                super.onSkipToPrevious()
+                setNextPrevious(next = false)
+            }
         })
 
         if (builder == null) {
@@ -791,7 +801,7 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         val intent = Intent(this, MusicService::class.java)
         intent.action = intentAction
         val pendingIntent =
-            PendingIntent.getService(this, 1, intent, PendingIntent.FLAG_IMMUTABLE)
+            PendingIntent.getService(this, intentAction.hashCode(), intent, PendingIntent.FLAG_IMMUTABLE)
         @Suppress("DEPRECATION")
         return Notification.Action.Builder(icon, title, pendingIntent).build()
     }

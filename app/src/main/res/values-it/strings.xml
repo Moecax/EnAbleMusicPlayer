@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMusic</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Music</string>
     <string name="about">Informazioni</string>
     <string name="add_song">Aggiungi Brano</string>
     <string name="up_txt">Uploader:</string>
@@ -31,7 +31,7 @@ Questo è necessario per scaricare brani nella memoria interna.</string>
     <string name="unexpected_err">Qualcosa è andato storto. Per favore segnalacelo!</string>
     <string name="pref_fmt">Seleziona il formato audio predefinito per salvare i brani.</string>
     <string name="pref_search">Seleziona la tua sorgente di ricerca preferita.</string>
-    <string name="pref_about">Dai un\'occhiata alle persone che stanno dietro Able!</string>
+    <string name="pref_about">Dai un\'occhiata alle persone che stanno dietro En-able!</string>
     <string name="fmt">Formato</string>
     <string name="src">Fonte</string>
     <string name="starting">iniziando…</string>

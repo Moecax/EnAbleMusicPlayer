@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMusic</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Music</string>
     <string name="about">Acerca de</string>
     <string name="add_song">Añadir canción</string>
     <string name="up_txt">Cargador:</string>
@@ -30,7 +30,7 @@
     <string name="unexpected_err">Algo salió mal. ¡Por favor, repórtenos!</string>
     <string name="pref_fmt">Seleccione el formato de audio en el que guardar las canciones.</string>
     <string name="pref_search">Seleccione su fuente de búsqueda preferida.</string>
-    <string name="pref_about">¡Échale un vistazo a la gente detrás de Able!</string>
+    <string name="pref_about">¡Échale un vistazo a la gente detrás de En-able!</string>
     <string name="fmt">Formato</string>
     <string name="src">Fuente</string>
     <string name="starting">iniciando…</string>

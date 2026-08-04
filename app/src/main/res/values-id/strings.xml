@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMusic</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Music</string>
     <string name="about">Tentang</string>
     <string name="add_song">Tambahkan Lagu</string>
     <string name="up_txt">Pengunggah:</string>
@@ -11,7 +11,7 @@
     <string name="playlists">Daftar Putar</string>
     <string name="settings">Pengaturan</string>
     <string name="welcome">Selamat datang di %1$s!</string>
-    <string name="storage_perm">Perizinan penyimpanan diperlukan untuk melanjutkan. Ini dibutuhkan agar Able dapat mengunduh lagu kedalam penyimpanan anda.</string>
+    <string name="storage_perm">Perizinan penyimpanan diperlukan untuk melanjutkan. Ini dibutuhkan agar En-able dapat mengunduh lagu kedalam penyimpanan anda.</string>
     <string name="spot_adding">Harap tunggu! Sedang mengimpor Daftar Putar</string>
     <string name="spot_title">Import Daftar Putar Spotify</string>
     <string name="pos">Kirimkan</string>
@@ -30,7 +30,7 @@
     <string name="unexpected_err">Suatu kesalahan terjadi. Harap lapor ini kepada kami!</string>
     <string name="pref_fmt">Pilih format audio untuk menyimpan lagu ini.</string>
     <string name="pref_search">Pilih sumber pencarian yang kamu sukai.</string>
-    <string name="pref_about">Cari tau orang-orang yang berada dibelakang Able!</string>
+    <string name="pref_about">Cari tau orang-orang yang berada dibelakang En-able!</string>
     <string name="fmt">Format</string>
     <string name="src">Sumber</string>
     <string name="starting">memulai…</string>

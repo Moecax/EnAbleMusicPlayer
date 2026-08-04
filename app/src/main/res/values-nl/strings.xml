@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMuziek</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Muziek</string>
     <string name="about">Over</string>
     <string name="add_song">Liedje toevoegen</string>
     <string name="up_txt">Uploaden:</string>
@@ -10,7 +10,7 @@
     <string name="playlists">Playlists</string>
     <string name="settings">Instellingen</string>
     <string name="welcome">Welkom naar %1$s!</string>
-    <string name="storage_perm">Geheugen toestemming is nodig om verder te gaan. Dis is nodig zodat Able liedjes kan downloaden op je lokale geheugen.</string>
+    <string name="storage_perm">Geheugen toestemming is nodig om verder te gaan. Dis is nodig zodat En-able liedjes kan downloaden op je lokale geheugen.</string>
     <string name="spot_adding">Wacht alsjeblieft! Playlist aan het importeren</string>
     <string name="spot_title">Playlist uit Spotify importeren</string>
     <string name="pos">Indienen</string>
@@ -29,7 +29,7 @@
     <string name="unexpected_err">Er is fout opgelopen. Geliever dit te reporteren naar ons!</string>
     <string name="pref_fmt">Kies de audio formaat waarin je je liedje wilt opslaan.</string>
     <string name="pref_search">Selecteer uw favoriete zoekbron.</string>
-    <string name="pref_about">Bekijk de mensen achter Able!</string>
+    <string name="pref_about">Bekijk de mensen achter En-able!</string>
     <string name="fmt">Formaat</string>
     <string name="src">Bron</string>
     <string name="starting">beginnen…</string>

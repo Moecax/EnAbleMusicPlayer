@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMusic</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Music</string>
     <string name="about">About</string>
     <string name="add_song">إضافة أغنية</string>
     <string name="up_txt">الرفع:</string>
@@ -11,7 +11,7 @@
     <string name="playlists">قوائم التشغيل</string>
     <string name="settings">الإعدادات</string>
     <string name="welcome">مرحبا بك في %1$s!</string>
-    <string name="storage_perm">إذن التخزين مطلوب للمتابعة. هذا مطلوب لتمكين Able من تنزيل الأغاني إلى التخزين الخاص بك.</string>
+    <string name="storage_perm">إذن التخزين مطلوب للمتابعة. هذا مطلوب لتمكين En-able من تنزيل الأغاني إلى التخزين الخاص بك.</string>
     <string name="spot_adding">الرجاء الانتظار! يتم استيراد قائمة التشغيل</string>
     <string name="spot_title">استيراد قائمة تشغيل Spotify</string>
     <string name="pos">إرسال</string>
@@ -30,7 +30,7 @@
     <string name="unexpected_err">حدث خطأ ما. الرجاء الإبلاغ عن هذا لنا!</string>
     <string name="pref_fmt">حدد تنسيق الصوت لحفظ الأغاني بهذه الصيغة.</string>
     <string name="pref_search">حدد مصدر البحث المفضل لديك.</string>
-    <string name="pref_about">تحقق من الأشخاص خلف Able!</string>
+    <string name="pref_about">تحقق من الأشخاص خلف En-able!</string>
     <string name="fmt">التنسيق</string>
     <string name="src">المصدر</string>
     <string name="starting">جارِ البدء…</string>
@@ -45,7 +45,7 @@
     <string name="next">التالي</string>
     <string name="kill">اغلق</string>
     <string name="imp">استيراد</string>
-    <string name="authors">العاملون في Able</string>
+    <string name="authors">العاملون في En-able</string>
     <string name="stream">البث</string>
     <string name="info">معلومات</string>
     <string name="ver">الإصدار</string>

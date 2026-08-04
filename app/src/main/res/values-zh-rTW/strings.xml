@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMusic</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Music</string>
     <string name="about">關於</string>
     <string name="add_song">新增歌曲</string>
     <string name="up_txt">上傳者：</string>
@@ -10,7 +10,7 @@
     <string name="playlists">播放清單</string>
     <string name="settings">設定</string>
     <string name="welcome">歡迎使用 %1$s!</string>
-    <string name="storage_perm">需要有儲存空間權限才能繼續。 Able 需要此權限才能將歌曲下載到您的儲存空間。</string>
+    <string name="storage_perm">需要有儲存空間權限才能繼續。 En-able 需要此權限才能將歌曲下載到您的儲存空間。</string>
     <string name="spot_adding">請稍候！正在匯入播放清單</string>
     <string name="spot_title">匯入 Spotify 播放清單</string>
     <string name="pos">確認</string>
@@ -29,7 +29,7 @@
     <string name="unexpected_err">發生錯誤。請回報給我們！</string>
     <string name="pref_fmt">選取要儲存的歌曲的音訊格式。</string>
     <string name="pref_search">選取你的慣用搜尋來源。</string>
-    <string name="pref_about">看看 Able 背後的人們！</string>
+    <string name="pref_about">看看 En-able 背後的人們！</string>
     <string name="fmt">格式</string>
     <string name="src">來源</string>
     <string name="starting">正在啟動⋯⋯</string>

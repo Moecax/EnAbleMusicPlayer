@@ -4,7 +4,7 @@
 
 AbleMusicPlayer is an open-source Android music player that streams and downloads audio from YouTube/YouTube Music using NewPipeExtractor. It supports local file playback, streaming, cache-while-stream, and playlist management. Licensed under GPLv3.
 
-- **Package**: `io.github.uditkarode.able`
+- **Package**: `io.github.moecax.enable`
 - **Min SDK**: 23 (Android 6.0), **Target/Compile SDK**: 36
 - **Language**: 100% Kotlin (built-in via AGP 9, no separate kotlin-android plugin)
 - **Build**: Gradle 9.3.1, AGP 9.0.1, Kotlin 2.3.10, version catalog (`gradle/libs.versions.toml`)

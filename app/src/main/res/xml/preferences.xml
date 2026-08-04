@@ -27,8 +27,8 @@
         android:summary="@string/downloads_pref_summary">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="io.github.uditkarode.able"
-            android:targetClass="io.github.uditkarode.able.activities.Downloads"
+            android:targetPackage="io.github.moecax.enable"
+            android:targetClass="io.github.moecax.enable.activities.Downloads"
             />
     </Preference>
 
@@ -38,8 +38,8 @@
         android:summary="@string/pref_about">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="io.github.uditkarode.able"
-            android:targetClass="io.github.uditkarode.able.activities.About"
+            android:targetPackage="io.github.moecax.enable"
+            android:targetClass="io.github.moecax.enable.activities.About"
             />
     </Preference>
 </PreferenceScreen>

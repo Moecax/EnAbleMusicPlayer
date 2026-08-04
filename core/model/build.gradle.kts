@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "io.github.uditkarode.able.model"
+    namespace = "io.github.moecax.enable.model"
     compileSdk = 36
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

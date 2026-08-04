@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "io.github.uditkarode.able"
+    namespace = "io.github.moecax.enable"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.uditkarode.able"
+        applicationId = "io.github.moecax.enable"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

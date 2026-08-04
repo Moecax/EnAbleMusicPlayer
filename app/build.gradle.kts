@@ -10,8 +10,8 @@ android {
         applicationId = "io.github.moecax.enable"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "ConcentricPuddles"
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "dev"
 
         buildFeatures {
             viewBinding = true

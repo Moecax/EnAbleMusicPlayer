@@ -2,7 +2,7 @@ name: Build Release APK
 
 on:
   push:
-    branches: [master]
+    tags: ['v*']
 
 jobs:
   build:
@@ -28,6 +28,12 @@ jobs:
 
       # ---------- Prepare build ----------
 
+      # Derive the app version from the pushed tag (v1.0.0 -> 1.0.0)
+      - name: Compute version
+        run: |
+          echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
       # Inject API keys into source (replaced at compile time)
       - name: Inject API keys
         env:
@@ -36,16 +42,11 @@ jobs:
           CONSTANTS="app/src/main/kotlin/io/github/moecax/enable/utils/Constants.kt"
           sed -i "s/INSERT_RAPID_KEY/${RAPID_KEY}/" "$CONSTANTS"
 
-      # Clone the release keystore from a private repo (read-only PAT)
+      # Decode the release keystore from a base64 secret
       - name: Fetch signing keystore
         env:
-          TOKEN: ${{ secrets.TOKEN }}
-        run: |
-          git clone --depth 1 \
-            "https://x-access-token:${TOKEN}@github.com/moecax/EnableKeystore.git" \
-            _keystore
-          mv _keystore/release.keystore app/
-          rm -rf _keystore
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "${KEYSTORE_BASE64}" | base64 -d > app/release.keystore
 
       # ---------- Build ----------
 
@@ -59,23 +60,22 @@ jobs:
         env:
           TG_BOT_KEY: ${{ secrets.TG_BOT_KEY }}
         run: |
-          SHORT_SHA="${GITHUB_SHA::8}"
           for APK in app/build/outputs/apk/release/*.apk; do
             ABI=$(basename "$APK" .apk | sed 's/app-//' | sed 's/-release//' | sed 's/-unsigned//')
-            RENAMED="app/build/outputs/apk/release/Enable-${ABI}-${SHORT_SHA}.apk"
+            RENAMED="app/build/outputs/apk/release/Enable-${ABI}-${VERSION_NAME}.apk"
             mv "$APK" "$RENAMED"
             curl -sf -F document=@"${RENAMED}" \
               "https://api.telegram.org/bot${TG_BOT_KEY}/sendDocument" \
               -F chat_id="-1001415196670" \
               -F parse_mode=Markdown \
-              -F caption="\`${SHORT_SHA} — ${ABI}\`"
+              -F caption="\`${VERSION_NAME} — ${ABI}\`"
           done
 
       # Also save APKs as GitHub Actions artifacts for easy download
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Enable-${{ github.sha }}
+          name: Enable-${{ env.VERSION_NAME }}
           path: app/build/outputs/apk/release/*.apk
 
       # Create a GitHub Release with the APKs
@@ -83,13 +83,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          SHORT_SHA="${GITHUB_SHA::8}"
-          TAG="build-${SHORT_SHA}"
           COMMIT_MSG=$(git log -1 --pretty=%s)
           NOTES=$(printf 'Automated release from commit [`%s`](https://github.com/${{ github.repository }}/commit/%s)\n\n**%s**' \
-            "$SHORT_SHA" "$GITHUB_SHA" "$COMMIT_MSG")
-          gh release create "$TAG" \
-            --title "Build ${SHORT_SHA}" \
+            "${GITHUB_SHA::8}" "$GITHUB_SHA" "$COMMIT_MSG")
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "En-able ${VERSION_NAME}" \
             --notes "$NOTES" \
             --latest \
             app/build/outputs/apk/release/*.apk
@@ -100,12 +98,11 @@ jobs:
         env:
           TG_BOT_KEY: ${{ secrets.TG_BOT_KEY }}
         run: |
-          SHORT_SHA="${GITHUB_SHA::8}"
           curl -sf -X POST "https://api.telegram.org/bot${TG_BOT_KEY}/sendMessage" \
             -d chat_id="-1001415196670" \
             -d disable_web_page_preview=true \
             -d parse_mode=markdown \
-            -d text="🤖 \`workflow for\` [${SHORT_SHA}](https://github.com/${{ github.repository }}/commit/${GITHUB_SHA}) \`finished\` 🤖"
+            -d text="🤖 \`release\` [${VERSION_NAME}](https://github.com/${{ github.repository }}/releases/tag/${GITHUB_REF_NAME}) \`finished\` 🤖"
           curl -sf -X POST "https://api.telegram.org/bot${TG_BOT_KEY}/sendSticker" \
             -d chat_id="-1001415196670" \
             -d sticker="CAACAgUAAxkBAAJc416cRVy18acXP6HgtZSnxuuoJi01AAK9AAMtO2YjehthhceJ__sYBA"

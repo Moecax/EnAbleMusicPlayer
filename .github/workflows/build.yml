@@ -34,6 +34,14 @@ jobs:
           echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "VERSION_CODE=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
+      # Codenames are generated and recorded by `fastlane android production`
+      # (see fastlane/codenames.txt); read back the one for this tag.
+      - name: Compute codename
+        run: |
+          VERSION_NAME="${GITHUB_REF_NAME#v}"
+          CODENAME=$(grep " v${VERSION_NAME}\$" fastlane/codenames.txt 2>/dev/null | tail -1 | cut -d' ' -f1)
+          echo "CODENAME=${CODENAME:-Dev Build}" >> "$GITHUB_ENV"
+
       # Inject API keys into source (replaced at compile time)
       - name: Inject API keys
         env:
@@ -55,23 +63,15 @@ jobs:
 
       # ---------- Upload artifacts ----------
 
-      # Rename and upload each per-ABI APK to Telegram channel
-      - name: Telegram — upload APKs
-        env:
-          TG_BOT_KEY: ${{ secrets.TG_BOT_KEY }}
+      # Rename each per-ABI APK to include the version
+      - name: Rename APKs
         run: |
           for APK in app/build/outputs/apk/release/*.apk; do
             ABI=$(basename "$APK" .apk | sed 's/app-//' | sed 's/-release//' | sed 's/-unsigned//')
-            RENAMED="app/build/outputs/apk/release/Enable-${ABI}-${VERSION_NAME}.apk"
-            mv "$APK" "$RENAMED"
-            curl -sf -F document=@"${RENAMED}" \
-              "https://api.telegram.org/bot${TG_BOT_KEY}/sendDocument" \
-              -F chat_id="-1001415196670" \
-              -F parse_mode=Markdown \
-              -F caption="\`${VERSION_NAME} — ${ABI}\`"
+            mv "$APK" "app/build/outputs/apk/release/Enable-${ABI}-${VERSION_NAME}.apk"
           done
 
-      # Also save APKs as GitHub Actions artifacts for easy download
+      # Save APKs as GitHub Actions artifacts for easy download
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -83,26 +83,25 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          COMMIT_MSG=$(git log -1 --pretty=%s)
-          NOTES=$(printf 'Automated release from commit [`%s`](https://github.com/${{ github.repository }}/commit/%s)\n\n**%s**' \
-            "${GITHUB_SHA::8}" "$GITHUB_SHA" "$COMMIT_MSG")
+          # Pull this version's section out of CHANGELOG.md (as written by
+          # `fastlane android production`): everything between its "## vX.Y.Z"
+          # heading and the next "## " heading (or end of file).
+          SECTION=$(awk -v ver="## v${VERSION_NAME}" '
+            $0 ~ "^" ver { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md)
+          # Trim leading and trailing blank lines, keep blank lines in between.
+          NOTES=$(printf '%s\n' "$SECTION" | sed -e '/./,$!d' | tac | sed -e '/./,$!d' | tac)
+
+          if [ -z "$NOTES" ]; then
+            COMMIT_MSG=$(git log -1 --pretty=%s)
+            NOTES=$(printf 'Automated release from commit [`%s`](https://github.com/${{ github.repository }}/commit/%s)\n\n**%s**' \
+              "${GITHUB_SHA::8}" "$GITHUB_SHA" "$COMMIT_MSG")
+          fi
+
           gh release create "${GITHUB_REF_NAME}" \
-            --title "En-able ${VERSION_NAME}" \
+            --title "En-able ${VERSION_NAME} \"${CODENAME}\"" \
             --notes "$NOTES" \
             --latest \
             app/build/outputs/apk/release/*.apk
-
-      # ---------- Notify build finished ----------
-
-      - name: Telegram — build finished
-        env:
-          TG_BOT_KEY: ${{ secrets.TG_BOT_KEY }}
-        run: |
-          curl -sf -X POST "https://api.telegram.org/bot${TG_BOT_KEY}/sendMessage" \
-            -d chat_id="-1001415196670" \
-            -d disable_web_page_preview=true \
-            -d parse_mode=markdown \
-            -d text="🤖 \`release\` [${VERSION_NAME}](https://github.com/${{ github.repository }}/releases/tag/${GITHUB_REF_NAME}) \`finished\` 🤖"
-          curl -sf -X POST "https://api.telegram.org/bot${TG_BOT_KEY}/sendSticker" \
-            -d chat_id="-1001415196670" \
-            -d sticker="CAACAgUAAxkBAAJc416cRVy18acXP6HgtZSnxuuoJi01AAK9AAMtO2YjehthhceJ__sYBA"

@@ -81,9 +81,9 @@
                         tools:ignore="MissingPrefix,RtlSymmetry"/>
 
                     <TextView
+                        android:id="@+id/version_string"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0.96"
                         android:textColor="#fbfbfb"
                         android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
 
@@ -97,7 +97,7 @@
                         android:textColor="#80fbfbfb" tools:ignore="RtlSymmetry"/>
 
                     <TextView
-                        android:id="@+id/version_string"
+                        android:id="@+id/flavor_string"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -113,10 +113,10 @@
                         tools:ignore="HardcodedText" />
 
                     <TextView
+                        android:id="@+id/codename_string"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="ConcentricPuddles"
                         android:textColor="#fbfbfb"
                         android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
 

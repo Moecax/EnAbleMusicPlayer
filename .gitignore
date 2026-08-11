@@ -19,3 +19,5 @@ PLAN.md
 bin/
 hs_err_pid*.log
 replay_pid*.log
+fastlane/.env
+fastlane/report.xml

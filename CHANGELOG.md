@@ -5,6 +5,10 @@ from Conventional Commit subjects since the previous release. See
 [fastlane/codenames.txt](fastlane/codenames.txt) for the codename recorded
 alongside each version.
 
+## v0.1.11 — DistantBasin
+
+_No changes recorded._
+
 ## v0.1.10 — EmberComet
 
 _No changes recorded._

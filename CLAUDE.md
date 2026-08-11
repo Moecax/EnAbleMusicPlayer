@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AbleMusicPlayer is an open-source Android music player that streams and downloads audio from YouTube/YouTube Music using NewPipeExtractor. It supports local file playback, streaming, cache-while-stream, and playlist management. Licensed under GPLv3.
+En-able is an open-source Android music player that streams and downloads audio from YouTube/YouTube Music using NewPipeExtractor. It supports local file playback, streaming, cache-while-stream, and playlist management. Licensed under GPLv3.
 
 - **Package**: `io.github.moecax.enable`
 - **Min SDK**: 23 (Android 6.0), **Target/Compile SDK**: 36

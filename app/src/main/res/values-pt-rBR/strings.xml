@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMusic</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Music</string>
     <string name="about">Sobre</string>
     <string name="add_song">Adicionar música</string>
     <string name="up_txt">Uploader:</string>
@@ -10,7 +10,7 @@
     <string name="playlists">Playlists</string>
     <string name="settings">Configurações</string>
     <string name="welcome">Bem vindo ao %1$s!</string>
-    <string name="storage_perm">A permissão de armazenamento é necessária para prosseguir. Isto é necessário para que o Able faça o download de músicas para o seu armazenamento.</string>
+    <string name="storage_perm">A permissão de armazenamento é necessária para prosseguir. Isto é necessário para que o En-able faça o download de músicas para o seu armazenamento.</string>
     <string name="spot_adding">Por favor aguarde! Importando playlist</string>
     <string name="spot_title">Importar playlist do Spotify</string>
     <string name="pos">Enviar</string>
@@ -29,7 +29,7 @@
     <string name="unexpected_err">Alguma coisa deu errado. Por favor, nos reporte isso!</string>
     <string name="pref_fmt">Selecione o formato do áudio para salvar as músicas.</string>
     <string name="pref_search">Selecione sua fonte favorita de pesquisa</string>
-    <string name="pref_about">Veja as pessoas por trás do Able!</string>
+    <string name="pref_about">Veja as pessoas por trás do En-able!</string>
     <string name="fmt">Formato</string>
     <string name="src">Fonte</string>
     <string name="starting">iniciando...</string>

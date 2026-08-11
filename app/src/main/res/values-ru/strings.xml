@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">Able Музыка</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Музыка</string>
     <string name="about">О приложении</string>
     <string name="add_song">Добавить трек</string>
     <string name="up_txt">Загрузка:</string>
@@ -30,7 +30,7 @@
     <string name="unexpected_err">Что-то пошло не так. Пожалуйста, сообщите нам об этом!</string>
     <string name="pref_fmt">Выберите формат аудио для сохранения треков.</string>
     <string name="pref_search">Выберите предпочитаемый вами источник поиска.</string>
-    <string name="pref_about">Ознакомьтесь с людьми позади Able!</string>
+    <string name="pref_about">Ознакомьтесь с людьми позади En-able!</string>
     <string name="fmt">Формат</string>
     <string name="src">Источник</string>
     <string name="starting">запуск…</string>

@@ -1,0 +1,304 @@
+require "json"
+require "shellwords"
+
+default_platform(:android)
+
+ROOT_DIR = File.expand_path("..", __dir__)
+CONSTANTS_PATH = File.join(ROOT_DIR, "app/src/main/kotlin/io/github/moecax/enable/utils/Constants.kt")
+TOML_PATH = File.join(ROOT_DIR, "gradle/libs.versions.toml")
+CODENAMES_PATH = File.join(ROOT_DIR, "fastlane/codenames.txt")
+CHANGELOG_PATH = File.join(ROOT_DIR, "CHANGELOG.md")
+REPOSITORY_NAME = "Moecax/EnAbleMusicPlayer"
+
+CODENAME_ADJECTIVES = %w[
+  Silent Concentric Wandering Crimson Frozen Gilded Hidden Lucid Restless Velvet
+  Amber Bright Curious Distant Echoing Faded Golden Humming Icy Jovial
+  Keen Lonely Mellow Nimble Opal Quiet Radiant Serene Tangled Umbral
+  Vivid Weathered Xenial Yielding Zealous Drifting Ember Feral Glowing Hollow
+]
+
+CODENAME_NOUNS = %w[
+  Puddles Falcon Meadow Ember Compass Lantern Harbor Thicket Comet Ridge
+  Willow Cascade Orchard Beacon Drift Hollow Tundra Grove Reef Summit
+  Prairie Glacier Delta Canyon Marsh Horizon Cove Bramble Spire Vale
+  Fjord Mesa Thistle Cliff Current Bayou Ledge Quarry Basin Wharf
+]
+
+# Maps a Conventional Commit type prefix to the changelog heading it's
+# grouped under. Anything that doesn't match a known type falls under "Other".
+CHANGELOG_HEADINGS = {
+  "feat" => "Features",
+  "fix" => "Fixes",
+  "refactor" => "Refactors",
+  "docs" => "Docs",
+  "chore" => "Chores",
+  "perf" => "Performance",
+  "build" => "Build & CI",
+  "ci" => "Build & CI",
+}.freeze
+
+# Picks a random Adjective+Noun codename that hasn't been used by a previous
+# release, per the history recorded in fastlane/codenames.txt.
+def generate_codename
+  used = File.exist?(CODENAMES_PATH) ?
+    File.readlines(CODENAMES_PATH).map { |line| line[/^(\S+)/, 1] }.compact : []
+
+  candidates = CODENAME_ADJECTIVES.product(CODENAME_NOUNS).map { |a, n| "#{a}#{n}" } - used
+  UI.user_error!("Ran out of unique codenames - expand the word lists in the Fastfile") if candidates.empty?
+  candidates.sample
+end
+
+# Looks up the codename recorded for a given version (e.g. "1.2.3") in
+# fastlane/codenames.txt.
+def codename_for(version)
+  return nil unless File.exist?(CODENAMES_PATH)
+  line = File.readlines(CODENAMES_PATH).reverse.find { |l| l.strip.end_with?(" v#{version}") }
+  line&.[](/^(\S+)/, 1)
+end
+
+# Returns the highest "vX.Y.Z" git tag as "X.Y.Z", or "0.0.0" if none exist.
+# Fetches tags first so this reflects the remote, not just the local clone.
+def latest_version
+  sh("git fetch --tags --quiet", log: false)
+  # No quotes around the glob: git does its own pattern matching for `-l`,
+  # and quoting it here only works under a real POSIX shell - on Windows
+  # fastlane's `sh` has no shell to strip the quotes, so 'v*' gets passed to
+  # git literally (including the quote characters) and matches nothing.
+  tags = sh("git tag -l v*", log: false).lines.map(&:strip)
+  versions = tags.filter_map { |t| t[/^v(\d+\.\d+\.\d+)$/, 1] }
+  return "0.0.0" if versions.empty?
+  versions.max_by { |v| v.split(".").map(&:to_i) }
+end
+
+# Bumps a "X.Y.Z" version string per standard semver rules.
+def bump_version(version, type)
+  major, minor, patch = version.split(".").map(&:to_i)
+  case type.to_s
+  when "major" then "#{major + 1}.0.0"
+  when "minor" then "#{major}.#{minor + 1}.0"
+  when "patch" then "#{major}.#{minor}.#{patch + 1}"
+  else UI.user_error!("type must be one of: major, minor, patch (got #{type.inspect})")
+  end
+end
+
+# Builds a Markdown changelog body from commit subjects since `tag` (or the
+# full history if `tag` is nil), grouped by Conventional Commit type.
+def changelog_since(tag)
+  range = tag ? "#{tag}..HEAD" : "HEAD"
+  subjects = sh("git log #{range} --pretty=format:%s", log: false).lines.map(&:strip).reject(&:empty?)
+
+  grouped = Hash.new { |h, k| h[k] = [] }
+  subjects.each do |subject|
+    if (m = subject.match(/^(\w+)(\([^)]*\))?!?:\s*(.+)$/))
+      heading = CHANGELOG_HEADINGS[m[1]] || "Other"
+      grouped[heading] << m[3]
+    else
+      grouped["Other"] << subject
+    end
+  end
+
+  return "_No changes recorded._" if grouped.empty?
+
+  # Stable, readable order; anything unexpected lands after the known headings.
+  order = CHANGELOG_HEADINGS.values.uniq + ["Other"]
+  order.select { |h| grouped.key?(h) }.map do |heading|
+    "### #{heading}\n\n" + grouped[heading].map { |line| "- #{line}" }.join("\n")
+  end.join("\n\n")
+end
+
+# Extracts the section for `version` (e.g. "1.2.3") out of CHANGELOG.md -
+# everything between its "## vX.Y.Z" heading and the next "## " heading (or
+# end of file). Returns nil if there's no matching section.
+def changelog_section(version)
+  return nil unless File.exist?(CHANGELOG_PATH)
+  contents = File.read(CHANGELOG_PATH)
+  match = contents.match(/^## v#{Regexp.escape(version)}[^\n]*\n+(.*?)(?=\n## |\z)/m)
+  match && match[1].strip
+end
+
+# Deletes the GitHub Release for `tag`, if one exists. Uses the REST API via
+# curl rather than the `gh` CLI, since `gh` isn't guaranteed to be installed
+# wherever this runs. No-op (not an error) if there's no release for `tag` -
+# e.g. a previous CI run failed before ever reaching release creation.
+def delete_github_release(tag)
+  response = sh(
+    "curl -s -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+    "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/tags/#{tag}",
+    log: false
+  )
+  release = JSON.parse(response)
+  return unless release.is_a?(Hash) && release["id"]
+
+  sh(
+    "curl -sf -X DELETE -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+    "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/#{release['id']}",
+    log: false
+  )
+  UI.success("Deleted existing GitHub Release for #{tag}")
+rescue StandardError
+  nil
+end
+
+# Uploads binary assets to a GitHub release via curl instead of fastlane's
+# built-in upload_assets. On this Windows/Ruby setup, that path reads the
+# file in text mode and truncates at the first 0x1A (DOS EOF) byte it hits,
+# silently corrupting every binary asset. curl --data-binary streams the
+# file untouched.
+def upload_release_assets(release_id, file_paths)
+  file_paths.each do |path|
+    filename = File.basename(path)
+    sh(
+      "curl -sf -X POST " \
+      "-H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+      "-H 'Content-Type: application/vnd.android.package-archive' " \
+      "--data-binary @#{path} " \
+      "'https://uploads.github.com/repos/#{REPOSITORY_NAME}/releases/#{release_id}/assets?name=#{filename}'",
+      log: false
+    )
+    UI.success("Uploaded #{filename}")
+  end
+end
+
+platform :android do
+  desc "Cut or re-cut a production release. GitHub Actions (build.yml) does the actual build/sign/publish " \
+       "once the tag lands - this lane just prepares and pushes it.\n" \
+       "  fastlane android production type:patch|minor|major   Bump the version and cut a new release\n" \
+       "  fastlane android production                          Re-cut the current version (no version bump),\n" \
+       "                                                        e.g. to retry after a failed CI run"
+  lane :production do |options|
+    if options[:type]
+      old_version = latest_version
+      new_version = bump_version(old_version, options[:type])
+      codename = generate_codename
+
+      body = changelog_since(old_version == "0.0.0" ? nil : "v#{old_version}")
+      existing_changelog = File.exist?(CHANGELOG_PATH) ? File.read(CHANGELOG_PATH) : "# Changelog\n"
+      new_entry = "## v#{new_version} — #{codename}\n\n#{body}\n"
+
+      # Insert the new entry above the first existing "## vX.Y.Z" heading (if
+      # any), preserving whatever preface text sits below the "# Changelog"
+      # title. Appends to the end if there are no prior entries yet.
+      if existing_changelog =~ /^## v\d+\.\d+\.\d+/
+        preface, rest = existing_changelog.split(/(?=^## v\d+\.\d+\.\d+)/, 2)
+        updated = "#{preface.rstrip}\n\n#{new_entry}\n#{rest}"
+      else
+        updated = "#{existing_changelog.rstrip}\n\n#{new_entry}"
+      end
+      File.write(CHANGELOG_PATH, updated.gsub(/\n{3,}/, "\n\n\n").strip + "\n")
+
+      File.open(CODENAMES_PATH, "a") { |f| f.puts("#{codename} v#{new_version}") }
+
+      sh("git add #{CHANGELOG_PATH} #{CODENAMES_PATH}", log: false)
+      git_commit(
+        path: [CHANGELOG_PATH, CODENAMES_PATH],
+        message: "chore(release): bump version to v#{new_version} (#{codename})"
+      )
+      push_to_git_remote
+
+      tag = "v#{new_version}"
+      sh("git tag #{tag}")
+      sh("git push origin #{tag}")
+
+      UI.success("Cut v#{new_version} \"#{codename}\" - pushed #{tag}, GitHub Actions will build and publish it.")
+    else
+      version = latest_version
+      UI.user_error!("No existing release to re-cut - pass type:patch|minor|major to cut the first one") if version == "0.0.0"
+      tag = "v#{version}"
+
+      delete_github_release(tag)
+
+      # Always delete then recreate the remote tag ref, even if it still
+      # points at the same commit. `git push --force` alone is a no-op when
+      # the SHA hasn't changed ("Everything up-to-date") - it never contacts
+      # the remote, so no push event fires and build.yml never re-triggers.
+      # Deleting the ref first guarantees a real ref-creation push event.
+      sh("git push origin :refs/tags/#{tag}", log: false) rescue nil
+      sh("git tag -f #{tag}")
+      sh("git push origin #{tag}")
+
+      UI.success("Re-cut #{tag} at #{sh('git rev-parse --short HEAD', log: false).strip} (version unchanged) - GitHub Actions will rebuild and republish it.")
+    end
+  end
+
+  desc "Emergency fallback: build, sign, and publish the current latest tag's release locally, " \
+       "for use only when GitHub Actions is unavailable. Does not bump the version, write a changelog " \
+       "entry, or generate a codename - run `fastlane android production` first to prepare those."
+  lane :local_release do
+    version = latest_version
+    UI.user_error!("No tags found - run `fastlane android production type:...` first") if version == "0.0.0"
+    codename = codename_for(version) || "Dev Build"
+
+    ENV["VERSION_NAME"] = version
+    ENV["VERSION_CODE"] = sh("git rev-list --count HEAD", log: false).strip
+    ENV["CODENAME"] = codename
+
+    sh("sed -i 's/INSERT_RAPID_KEY/#{ENV['RAPID_KEY']}/' #{CONSTANTS_PATH}", log: false)
+    begin
+      gradle(task: "clean", project_dir: ROOT_DIR)
+      gradle(task: "assembleRelease", project_dir: ROOT_DIR)
+    ensure
+      sh("git checkout -- #{CONSTANTS_PATH}")
+    end
+
+    apk_dir = File.join(ROOT_DIR, "app/build/outputs/apk/release")
+    renamed_apks = Dir.glob("#{apk_dir}/*.apk").map do |apk|
+      abi = File.basename(apk, ".apk").sub("app-", "").sub("-release", "").sub("-unsigned", "")
+      renamed = "#{apk_dir}/Enable-#{abi}-#{version}.apk"
+      File.rename(apk, renamed)
+      renamed
+    end
+    UI.user_error!("No APKs were produced by the build") if renamed_apks.empty?
+
+    tag = "v#{version}"
+    notes = changelog_section(version) || "Local release build."
+    title = "En-able #{version} \"#{codename}\""
+
+    existing = JSON.parse(
+      sh("curl -s -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+         "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/tags/#{tag}", log: false)
+    )
+
+    if existing.is_a?(Hash) && existing["id"]
+      payload = JSON.generate(name: title, body: notes)
+      sh(
+        "curl -sf -X PATCH -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+        "-H 'Content-Type: application/json' -d #{Shellwords.escape(payload)} " \
+        "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/#{existing['id']}",
+        log: false
+      )
+      release_id = existing["id"]
+    else
+      set_github_release(
+        repository_name: REPOSITORY_NAME,
+        api_token: ENV["GITHUB_API_TOKEN"],
+        tag_name: tag,
+        name: title,
+        description: notes
+      )
+      release_id = lane_context[SharedValues::SET_GITHUB_RELEASE_RELEASE_ID]
+    end
+
+    upload_release_assets(release_id, renamed_apks)
+  end
+
+  desc "Check for a newer NewPipeExtractor release and bump the version catalog if one exists"
+  lane :update_newpipe do
+    current = File.read(TOML_PATH)[/^newpipeextractor = "(.*)"/, 1]
+    auth_header = ENV["GITHUB_API_TOKEN"].to_s.empty? ? "" : "-H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}'"
+    latest = JSON.parse(
+      sh("curl -sf #{auth_header} https://api.github.com/repos/TeamNewPipe/NewPipeExtractor/releases/latest", log: false)
+    )["tag_name"]
+    UI.user_error!("Failed to fetch latest NewPipeExtractor release") if latest.nil?
+
+    if current == latest
+      UI.success("Already up to date (#{current})")
+      next
+    end
+
+    sh("sed -i 's/^newpipeextractor = \".*\"/newpipeextractor = \"#{latest}\"/' #{TOML_PATH}")
+    git_commit(path: TOML_PATH, message: "build(deps): bump NewPipeExtractor from #{current} to #{latest}")
+    push_to_git_remote
+
+    UI.important("Bumped NewPipeExtractor #{current} -> #{latest}. Run `fastlane android production type:patch` to cut a release with it.")
+  end
+end

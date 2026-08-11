@@ -10,8 +10,14 @@
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
+build-logic/build
 /captures
 .externalNativeBuild
 .cxx
 /app/release
 PLAN.md
+bin/
+hs_err_pid*.log
+replay_pid*.log
+fastlane/.env
+fastlane/report.xml

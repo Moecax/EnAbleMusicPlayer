@@ -1,0 +1,45 @@
+/*
+    Copyright 2020 Udit Karode <udit.karode@gmail.com>
+
+    This file is part of AbleMusicPlayer.
+
+    AbleMusicPlayer is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3 of the License.
+
+    AbleMusicPlayer is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with AbleMusicPlayer.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+package io.github.moecax.enable.adapters
+
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import io.github.moecax.enable.fragments.Home
+import io.github.moecax.enable.fragments.Library
+import io.github.moecax.enable.fragments.Search
+import io.github.moecax.enable.fragments.Playlists
+
+/**
+ * Adapter for ViewPager2 on MainActivity.
+ */
+class ViewPagerAdapter(activity: FragmentActivity, private val home: Home) :
+    FragmentStateAdapter(activity) {
+
+    override fun createFragment(position: Int): Fragment {
+        return when (position) {
+            0 -> home
+            1 -> Search()
+            2 -> Library()
+            else -> Playlists()
+        }
+    }
+
+    override fun getItemCount() = 4
+}

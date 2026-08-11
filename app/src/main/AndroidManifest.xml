@@ -52,7 +52,7 @@
             android:parentActivityName=".activities.Settings" />
 
         <service
-            android:name="io.github.uditkarode.able.services.MusicService"
+            android:name="io.github.moecax.enable.services.MusicService"
             android:description="@string/app_name"
             android:foregroundServiceType="mediaPlayback"
             android:enabled="true" />

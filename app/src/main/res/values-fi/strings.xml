@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Able</string>
-    <string name="app_name_full">AbleMusic</string>
+    <string name="app_name">En-able</string>
+    <string name="app_name_full">En-able Music</string>
     <string name="about">Lisätietoja</string>
     <string name="add_song">Lisää laulu</string>
     <string name="up_txt">Lisääjä:</string>
@@ -11,7 +11,7 @@
     <string name="playlists">Soittolistat</string>
     <string name="settings">Asetukset</string>
     <string name="welcome">Tervetuloa käyttämään sovellusta %1$s!</string>
-    <string name="storage_perm">The storage permission is required to proceed. This is needed for Able to download songs to your storage.</string>
+    <string name="storage_perm">The storage permission is required to proceed. This is needed for En-able to download songs to your storage.</string>
     <string name="spot_adding">Odota! Tuodaan soittolistaa</string>
     <string name="spot_title">Tuo Spotify-soittolista</string>
     <string name="pos">Lähetä</string>
@@ -30,7 +30,7 @@
     <string name="unexpected_err">Jokin epäonnistui. Ilmoittaisitko tästä meille!</string>
     <string name="pref_fmt">Valitse äänenmuoto millä laulut tallennetaan.</string>
     <string name="pref_search">Valitse suosimasi hakulähde.</string>
-    <string name="pref_about">Check out the people behind Able!</string>
+    <string name="pref_about">Check out the people behind En-able!</string>
     <string name="fmt">Muoto</string>
     <string name="src">Lähde</string>
     <string name="starting">käynnistetään…</string>

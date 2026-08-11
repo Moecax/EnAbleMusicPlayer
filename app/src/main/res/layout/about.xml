@@ -81,9 +81,9 @@
                         tools:ignore="MissingPrefix,RtlSymmetry"/>
 
                     <TextView
+                        android:id="@+id/version_string"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0.96"
                         android:textColor="#fbfbfb"
                         android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
 
@@ -97,7 +97,7 @@
                         android:textColor="#80fbfbfb" tools:ignore="RtlSymmetry"/>
 
                     <TextView
-                        android:id="@+id/version_string"
+                        android:id="@+id/flavor_string"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -113,10 +113,10 @@
                         tools:ignore="HardcodedText" />
 
                     <TextView
+                        android:id="@+id/codename_string"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="ConcentricPuddles"
                         android:textColor="#fbfbfb"
                         android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
 
@@ -147,6 +147,35 @@
                     android:orientation="vertical"
                     android:paddingBottom="8dp"
                     android:paddingTop="8dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start|center_vertical"
+                        android:paddingEnd="16dp"
+                        android:text="@string/fork_maintainer_label"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                        android:textColor="#80fbfbfb" tools:ignore="RtlSymmetry"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="@string/fork_maintainer"
+                        android:textColor="#fbfbfb"
+                        fontPath="interbold.otf"
+                        android:textSize="18sp"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                        tools:ignore="MissingPrefix"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="@string/fork_notice"
+                        android:textColor="#80fbfbfb"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                        tools:ignore="HardcodedText" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -262,7 +291,6 @@
                             android:padding="12dp"
                             android:layout_marginEnd="10dp"
                             android:textSize="18sp"
-                            app:icon="@drawable/telegram"
                             android:layout_gravity="center_horizontal"
                             android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
                             tools:ignore="MissingPrefix"/>

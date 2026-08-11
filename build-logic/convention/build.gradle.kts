@@ -2,7 +2,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "io.github.uditkarode.able.buildlogic"
+group = "io.github.moecax.enable.buildlogic"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17

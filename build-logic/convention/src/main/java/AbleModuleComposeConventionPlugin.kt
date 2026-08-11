@@ -1,7 +1,7 @@
 import com.android.build.gradle.LibraryExtension
-import io.github.uditkarode.able.convention.configureAndroidCompose
-import io.github.uditkarode.able.convention.configureKotlinAndroid
-import io.github.uditkarode.able.convention.kotlinOptions
+import io.github.moecax.enable.convention.configureAndroidCompose
+import io.github.moecax.enable.convention.configureKotlinAndroid
+import io.github.moecax.enable.convention.kotlinOptions
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure

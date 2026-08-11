@@ -3,20 +3,21 @@ plugins {
 }
 
 android {
-    namespace = "io.github.uditkarode.able"
+    namespace = "io.github.moecax.enable"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.uditkarode.able"
+        applicationId = "io.github.moecax.enable"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "ConcentricPuddles"
+        versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
+        versionName = System.getenv("VERSION_NAME") ?: "dev"
+        buildConfigField("String", "CODENAME", "\"${System.getenv("CODENAME") ?: "Dev Build"}\"")
+    }
 
-        buildFeatures {
-            viewBinding = true
-            buildConfig = true
-        }
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
     }
 
     splits {

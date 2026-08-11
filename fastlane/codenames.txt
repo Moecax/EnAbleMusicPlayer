@@ -1,0 +1,5 @@
+# Release codename history, one "<Codename> v<version>" per line, oldest first.
+# Appended automatically by `fastlane android production` - do not edit by hand.
+CrimsonSummit v0.1.8
+EmberComet v0.1.10
+DistantBasin v0.1.11

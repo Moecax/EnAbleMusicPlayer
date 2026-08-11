@@ -1,4 +1,5 @@
 require "json"
+require "shellwords"
 
 default_platform(:android)
 
@@ -8,11 +9,6 @@ TOML_PATH = File.join(ROOT_DIR, "gradle/libs.versions.toml")
 CODENAMES_PATH = File.join(ROOT_DIR, "fastlane/codenames.txt")
 CHANGELOG_PATH = File.join(ROOT_DIR, "CHANGELOG.md")
 REPOSITORY_NAME = "Moecax/EnAbleMusicPlayer"
-
-# The `gh` CLI reads GH_TOKEN, not GITHUB_API_TOKEN - alias it so the single
-# token documented in fastlane/.env.example authenticates both fastlane's own
-# GitHub API calls and any `gh` shell-outs (release delete/view/edit).
-ENV["GH_TOKEN"] ||= ENV["GITHUB_API_TOKEN"]
 
 CODENAME_ADJECTIVES = %w[
   Silent Concentric Wandering Crimson Frozen Gilded Hidden Lucid Restless Velvet
@@ -120,6 +116,29 @@ def changelog_section(version)
   match && match[1].strip
 end
 
+# Deletes the GitHub Release for `tag`, if one exists. Uses the REST API via
+# curl rather than the `gh` CLI, since `gh` isn't guaranteed to be installed
+# wherever this runs. No-op (not an error) if there's no release for `tag` -
+# e.g. a previous CI run failed before ever reaching release creation.
+def delete_github_release(tag)
+  response = sh(
+    "curl -s -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+    "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/tags/#{tag}",
+    log: false
+  )
+  release = JSON.parse(response)
+  return unless release.is_a?(Hash) && release["id"]
+
+  sh(
+    "curl -sf -X DELETE -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+    "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/#{release['id']}",
+    log: false
+  )
+  UI.success("Deleted existing GitHub Release for #{tag}")
+rescue StandardError
+  nil
+end
+
 # Uploads binary assets to a GitHub release via curl instead of fastlane's
 # built-in upload_assets. On this Windows/Ruby setup, that path reads the
 # file in text mode and truncates at the first 0x1A (DOS EOF) byte it hits,
@@ -186,11 +205,16 @@ platform :android do
       UI.user_error!("No existing release to re-cut - pass type:patch|minor|major to cut the first one") if version == "0.0.0"
       tag = "v#{version}"
 
-      # Best-effort: nothing to clean up if this version was never published.
-      sh("gh release delete #{tag} --yes --cleanup-tag", log: false) rescue nil
+      delete_github_release(tag)
 
+      # Always delete then recreate the remote tag ref, even if it still
+      # points at the same commit. `git push --force` alone is a no-op when
+      # the SHA hasn't changed ("Everything up-to-date") - it never contacts
+      # the remote, so no push event fires and build.yml never re-triggers.
+      # Deleting the ref first guarantees a real ref-creation push event.
+      sh("git push origin :refs/tags/#{tag}", log: false) rescue nil
       sh("git tag -f #{tag}")
-      sh("git push origin #{tag} --force")
+      sh("git push origin #{tag}")
 
       UI.success("Re-cut #{tag} at #{sh('git rev-parse --short HEAD', log: false).strip} (version unchanged) - GitHub Actions will rebuild and republish it.")
     end
@@ -229,11 +253,20 @@ platform :android do
     notes = changelog_section(version) || "Local release build."
     title = "En-able #{version} \"#{codename}\""
 
-    null_device = Gem.win_platform? ? "NUL" : "/dev/null"
-    release_exists = system("gh release view #{tag} > #{null_device} 2>&1")
-    if release_exists
-      sh("gh release edit #{tag} --title '#{title}' --notes '#{notes.gsub("'", "'\\\\''")}'")
-      release_id = JSON.parse(sh("gh api repos/#{REPOSITORY_NAME}/releases/tags/#{tag}", log: false))["id"]
+    existing = JSON.parse(
+      sh("curl -s -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+         "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/tags/#{tag}", log: false)
+    )
+
+    if existing.is_a?(Hash) && existing["id"]
+      payload = JSON.generate(name: title, body: notes)
+      sh(
+        "curl -sf -X PATCH -H 'Authorization: Bearer #{ENV['GITHUB_API_TOKEN']}' " \
+        "-H 'Content-Type: application/json' -d #{Shellwords.escape(payload)} " \
+        "https://api.github.com/repos/#{REPOSITORY_NAME}/releases/#{existing['id']}",
+        log: false
+      )
+      release_id = existing["id"]
     else
       set_github_release(
         repository_name: REPOSITORY_NAME,

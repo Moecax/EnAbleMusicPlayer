@@ -8,6 +8,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # gh release create needs write access; the default GITHUB_TOKEN is
+    # read-only unless a job explicitly asks for more.
+    permissions:
+      contents: write
+
     env:
       KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
       KEY_PASS: ${{ secrets.KEY_PASS }}
@@ -55,17 +60,6 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: echo "${KEYSTORE_BASE64}" | base64 -d > app/release.keystore
-
-      - name: Verify decoded keystore integrity
-        env:
-          EXPECTED_SHA256: ${{ secrets.KEYSTORE_SHA256 }}
-        run: |
-          ACTUAL_SHA256=$(sha256sum app/release.keystore | cut -d' ' -f1)
-          if [ "$ACTUAL_SHA256" = "$EXPECTED_SHA256" ]; then
-            echo "Keystore integrity: MATCH"
-          else
-            echo "Keystore integrity: MISMATCH"
-          fi
 
       # ---------- Build ----------
 

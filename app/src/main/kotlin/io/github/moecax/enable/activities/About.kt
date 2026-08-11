@@ -40,10 +40,12 @@ class About: AppCompatActivity() {
 
         setContentView(binding.root)
 
-        binding.versionString.text = BuildConfig.BUILD_TYPE.replaceFirstChar { it.uppercase() }
+        binding.versionString.text = BuildConfig.VERSION_NAME
+        binding.flavorString.text = BuildConfig.BUILD_TYPE.replaceFirstChar { it.uppercase() }
+        binding.codenameString.text = BuildConfig.CODENAME
 
         binding.support.setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/moecax/enable")))
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Moecax/EnAbleMusicPlayer")))
         }
     }
 

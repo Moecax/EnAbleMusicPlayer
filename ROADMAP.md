@@ -43,6 +43,29 @@ so lyrics are available offline after the first fetch. Needs graceful
 handling for songs LRCLIB has no match for (hide the lyrics panel rather
 than error).
 
+## Bulk import YouTube Music playlists
+
+Let users import an entire YouTube Music playlist in one action instead of
+adding songs individually. Given a playlist URL, use
+`YouTube.getPlaylistExtractor(link)` (same NewPipeExtractor path already
+used for playlist enumeration) to page through `initialPage.items`, map
+each entry to a `Song`, and write them into a new or existing local
+`Playlist`. Needs progress feedback for large playlists and sane handling
+of unavailable/region-locked entries (skip with a summary rather than
+aborting the whole import).
+
+## Backup/restore: export & import songlist and listening habits
+
+Let users back up their library and [[Listening habits ("Top music")]]
+history to a single external file (e.g. JSON, written via SAF so it can be
+saved anywhere/shared) and restore it later, on the same device or a new
+one. Export should cover the local playlists (`playlistFolder` JSON),
+song/queue metadata, and the listening-history data once that tracking
+layer exists. Import should validate the file, merge or replace existing
+data (needs a decision on merge-vs-overwrite UX), and re-link songs by
+`youtubeLink`/`filePath` where local files or cached streams aren't
+present on the new device.
+
 ## Fix `fastlane android release` asset upload
 
 `upload_release_assets` in `fastlane/Fastfile` shells out to `curl` to push

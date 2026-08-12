@@ -63,6 +63,7 @@ import io.github.moecax.enable.model.song.Song
 import io.github.moecax.enable.model.song.SongState
 import io.github.moecax.enable.services.MusicService
 import io.github.moecax.enable.utils.Constants
+import io.github.moecax.enable.utils.LyricsFetcher
 import io.github.moecax.enable.utils.MusicClientActivity
 import io.github.moecax.enable.utils.Shared
 import androidx.activity.OnBackPressedCallback
@@ -86,6 +87,9 @@ class Player : MusicClientActivity() {
     private lateinit var serviceConn: ServiceConnection
     private var mService: MusicService? = null
     private var seekbarJob: Job? = null
+    private var lyricsJob: Job? = null
+    private var currentLyrics: List<LyricsFetcher.LyricLine> = emptyList()
+    private var currentLyricIndex = -1
 
     private var playing = SongState.paused
     private var onShuffle = false
@@ -476,6 +480,7 @@ class Player : MusicClientActivity() {
     override fun onPause() {
         super.onPause()
         seekbarJob?.cancel()
+        lyricsJob?.cancel()
     }
 
     private fun startSeekbarUpdates() {
@@ -487,9 +492,23 @@ class Player : MusicClientActivity() {
                     val songPosition = ms.getMediaPlayer().currentPosition
                     binding.playerSeekbar.progress = songPosition
                     binding.playerCurrentPosition.text = getDurationFromMs(songPosition)
+                    updateCurrentLyricLine(songPosition)
                 }
                 delay(1000)
             }
+        }
+    }
+
+
+    private fun updateCurrentLyricLine(positionMs: Int) {
+        if (currentLyrics.isEmpty()) return
+
+        var index = currentLyrics.indexOfLast { it.timeMs <= positionMs }
+        if (index == -1) index = 0
+
+        if (index != currentLyricIndex) {
+            currentLyricIndex = index
+            binding.lyricLine.text = currentLyrics[index].text
         }
     }
 
@@ -843,6 +862,20 @@ class Player : MusicClientActivity() {
             val song = mService.getPlayQueue()[mService.getCurrentIndex()]
             binding.songName.text = song.name
             binding.artistName.text = song.artist
+
+            lyricsJob?.cancel()
+            currentLyrics = emptyList()
+            currentLyricIndex = -1
+            binding.lyricLine.visibility = View.GONE
+            lyricsJob = launch(Dispatchers.IO) {
+                val lyrics = LyricsFetcher.fetch(song)
+                launch(Dispatchers.Main) {
+                    if (lyrics.isNotEmpty()) {
+                        currentLyrics = lyrics
+                        binding.lyricLine.visibility = View.VISIBLE
+                    }
+                }
+            }
 
             val duration = mService.getMediaPlayer().duration
             if (duration > 0) {

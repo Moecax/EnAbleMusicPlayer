@@ -44,12 +44,16 @@ class Constants {
         /** a File object pointing to the folder where temporary items will be stored */
         val cacheDir: File get() = File(baseDir, "cache")
 
+        /** a File object pointing to the folder where cached LRC lyrics will be stored */
+        val lyricsDir: File get() = File(baseDir, "lyrics")
+
         /**
          * API keys and version code names which *should* be replaced during compilation.
          */
         const val RAPID_API_KEY= "INSERT_RAPID_KEY"
 
         const val DEEZER_API = "https://deezerdevs-deezer.p.rapidapi.com/search?q="
+        const val LRCLIB_SEARCH_API = "https://lrclib.net/api/search"
         const val CHANNEL_ID = "AbleMusicDownload"
     }
 }

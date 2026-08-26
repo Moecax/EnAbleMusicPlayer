@@ -91,6 +91,21 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!--suppress AndroidUnknownAttribute -->
+        <TextView
+            android:id="@+id/lyric_line"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="30dp"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textColor="#80fbfbfb"
+            android:textSize="15sp"
+            android:visibility="gone"
+            tools:ignore="RtlSymmetry" />
+
         <LinearLayout
             android:id="@+id/song_info"
             android:layout_width="wrap_content"

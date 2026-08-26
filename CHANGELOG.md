@@ -5,6 +5,20 @@ from Conventional Commit subjects since the previous release. See
 [fastlane/codenames.txt](fastlane/codenames.txt) for the codename recorded
 alongside each version.
 
+## v0.1.12 — VividEmber
+
+### Features
+
+- added inline lyrics during song playback
+
+### Chores
+
+- update the roadmap
+
+### Other
+
+- Merge pull request #1 from Moecax/media_control_fix
+
 ## v0.1.11 — DistantBasin
 
 _No changes recorded._

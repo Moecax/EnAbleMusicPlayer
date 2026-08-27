@@ -1,33 +1,19 @@
-/*
-    Copyright 2020 Udit Karode <udit.karode@gmail.com>
-
-    This file is part of AbleMusicPlayer.
-
-    AbleMusicPlayer is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, version 3 of the License.
-
-    AbleMusicPlayer is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with AbleMusicPlayer.  If not, see <https://www.gnu.org/licenses/>.
-*/
-
 package io.github.moecax.enable.activities
 
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import io.github.inflationx.viewpump.ViewPumpContextWrapper
 import io.github.moecax.enable.AbleApplication
 import io.github.moecax.enable.R
 import io.github.moecax.enable.BuildConfig
 import io.github.moecax.enable.databinding.AboutBinding
+import io.github.moecax.enable.utils.UpdateChecker
+import kotlin.concurrent.thread
 /**
  * The about page.
  */
@@ -46,6 +32,25 @@ class About: AppCompatActivity() {
 
         binding.support.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Moecax/EnAbleMusicPlayer")))
+        }
+
+        binding.checkUpdatesButton.setOnClickListener {
+            binding.checkUpdatesButton.isEnabled = false
+            binding.checkUpdatesProgress.visibility = View.VISIBLE
+            thread {
+                // Manual checks bypass the 2-day gate — this is user-initiated,
+                // not the automated background poll.
+                val isNewer = UpdateChecker.checkNow(this@About)
+                runOnUiThread {
+                    binding.checkUpdatesButton.isEnabled = true
+                    binding.checkUpdatesProgress.visibility = View.GONE
+                    if (isNewer) {
+                        UpdateChecker.showDialogNow(this@About)
+                    } else {
+                        Toast.makeText(this@About, R.string.up_to_date, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 

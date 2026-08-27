@@ -49,6 +49,7 @@ import io.github.moecax.enable.utils.ChunkedDownloader
 import io.github.moecax.enable.utils.Constants
 import io.github.moecax.enable.utils.Shared
 import io.github.moecax.enable.utils.SwipeController
+import io.github.moecax.enable.utils.UpdateChecker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -200,6 +201,8 @@ class Home : Fragment(), CoroutineScope, MusicService.MusicClient {
             DownloadService.downloadCompletedSinceLastCheck = false
             updateSongList()
         }
+        binding.settingsBadge.visibility =
+            if (UpdateChecker.hasPendingUpdate(requireContext())) View.VISIBLE else View.GONE
     }
 
     override fun onPause() {

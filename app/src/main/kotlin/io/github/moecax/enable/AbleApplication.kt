@@ -22,6 +22,7 @@ import android.app.Application
 import io.github.inflationx.calligraphy3.CalligraphyConfig
 import io.github.inflationx.calligraphy3.CalligraphyInterceptor
 import io.github.inflationx.viewpump.ViewPump
+import io.github.moecax.enable.services.UpdateCheckWorker
 import io.github.moecax.enable.utils.Constants
 import io.github.moecax.enable.utils.Shared
 import kotlin.concurrent.thread
@@ -35,6 +36,7 @@ class AbleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Constants.init(this)
+        UpdateCheckWorker.scheduleOrCancel(this)
         thread {
             Shared.migrateFileNames(this)
             Shared.migrateAlbumTags(this)

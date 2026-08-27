@@ -124,4 +124,7 @@ or via the UPI address %2$s</string>
     <string name="update_no_notes">No changelog provided.</string>
     <string name="update_now">Update</string>
     <string name="update_later">Later</string>
+    <string name="update_channel_name">Update Notifications</string>
+    <string name="update_notification_title">Update available</string>
+    <string name="update_notification_text">En-able %1$s is ready to download</string>
 </resources>

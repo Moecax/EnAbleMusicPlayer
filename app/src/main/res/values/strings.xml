@@ -127,4 +127,6 @@ or via the UPI address %2$s</string>
     <string name="update_channel_name">Update Notifications</string>
     <string name="update_notification_title">Update available</string>
     <string name="update_notification_text">En-able %1$s is ready to download</string>
+    <string name="check_updates_title">Check for updates automatically</string>
+    <string name="check_updates_summary">Periodically checks GitHub for new En-able releases</string>
 </resources>

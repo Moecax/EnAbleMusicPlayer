@@ -4,9 +4,12 @@ import android.os.Bundle
 import android.view.Menu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.preference.PreferenceManager
+import androidx.preference.SwitchPreferenceCompat
 import com.google.android.material.appbar.MaterialToolbar
 import com.takisoft.preferencex.PreferenceFragmentCompat
 import io.github.moecax.enable.R
+import io.github.moecax.enable.services.UpdateCheckWorker
 import io.github.moecax.enable.utils.Shared
 /**
  * The settings page.
@@ -44,5 +47,18 @@ class Settings: AppCompatActivity() {
 class SettingsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferencesFix(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.preferences, null)
+
+        findPreference<SwitchPreferenceCompat>("check_updates_key")?.setOnPreferenceChangeListener { _, newValue ->
+            val context = requireContext()
+            // Persist immediately so scheduleOrCancel (which re-reads the
+            // preference) sees the new value rather than the stale one —
+            // the default Preference persistence happens after this
+            // listener returns, which would otherwise be too late.
+            PreferenceManager.getDefaultSharedPreferences(context).edit()
+                .putBoolean("check_updates_key", newValue as Boolean)
+                .apply()
+            UpdateCheckWorker.scheduleOrCancel(context)
+            true
+        }
     }
 }

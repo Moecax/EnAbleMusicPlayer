@@ -120,4 +120,8 @@ or via the UPI address %2$s</string>
     <string name="downloads_waiting">Waiting…</string>
     <string name="downloads_spotify_title">Spotify Import</string>
     <string name="downloads_spotify_idle">No import in progress</string>
+    <string name="update_available_title">Update available — %1$s</string>
+    <string name="update_no_notes">No changelog provided.</string>
+    <string name="update_now">Update</string>
+    <string name="update_later">Later</string>
 </resources>

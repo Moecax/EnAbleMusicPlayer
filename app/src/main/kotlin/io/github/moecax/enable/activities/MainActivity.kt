@@ -59,6 +59,7 @@ import io.github.moecax.enable.utils.Constants
 import io.github.moecax.enable.utils.CustomDownloader
 import io.github.moecax.enable.utils.MusicClientActivity
 import io.github.moecax.enable.utils.Shared
+import io.github.moecax.enable.utils.UpdateChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -197,6 +198,8 @@ class MainActivity : MusicClientActivity(), Search.SongCallback {
 
             override fun onServiceDisconnected(name: ComponentName) {}
         }
+
+        UpdateChecker.maybeShowDialog(this@MainActivity)
     }
 
     private fun loadingEvent(loading: Boolean) {

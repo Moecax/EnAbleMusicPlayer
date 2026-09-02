@@ -5,6 +5,26 @@ from Conventional Commit subjects since the previous release. See
 [fastlane/codenames.txt](fastlane/codenames.txt) for the codename recorded
 alongside each version.
 
+## v0.1.13 — FadedWharf
+
+### Features
+
+- show a badge dot on the settings icon when an update is pending
+- show changelog dialog on app start when an update is pending
+- add manual check-for-updates button to About screen
+- add settings toggle for automatic update checks
+- add background WorkManager check and notification
+- add UpdateChecker fetch/cache/dialog logic
+- add version comparison utility
+
+### Fixes
+
+- restore GPLv3 header dropped in About.kt rewrite
+
+### Other
+
+- Merge pull request #2 from Moecax/lyrics-feature
+
 ## v0.1.12 — VividEmber
 
 ### Features

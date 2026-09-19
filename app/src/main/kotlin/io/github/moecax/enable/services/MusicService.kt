@@ -43,10 +43,13 @@ import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.PowerManager
+import android.content.SharedPreferences
 import android.provider.MediaStore
 import android.util.Log
 import com.bumptech.glide.Glide
 import com.bumptech.glide.signature.ObjectKey
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import io.github.moecax.enable.R
 import io.github.moecax.enable.activities.Player
 import io.github.moecax.enable.model.song.Song
@@ -56,8 +59,11 @@ import io.github.moecax.enable.utils.Constants
 import io.github.moecax.enable.utils.Shared
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import java.io.File
@@ -88,6 +94,9 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         private const val PREFS_NAME = "able_prefs"
         private const val PREF_SHUFFLE = "playback_shuffle"
         private const val PREF_REPEAT = "playback_repeat"
+        private const val PREF_QUEUE = "playback_queue"
+        private const val PREF_INDEX = "playback_index"
+        private const val PREF_POSITION = "playback_position"
 
         @Volatile var isServiceRunning = false
         var songCoverArt: WeakReference<Bitmap>? = null
@@ -114,6 +123,11 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
             }
         }
 
+        fun hasPersistedPlaybackState(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getInt(PREF_INDEX, -1) >= 0 && prefs.getString(PREF_QUEUE, null) != null
+        }
+
         private lateinit var notificationManager: NotificationManager
         private var focusRequest: AudioFocusRequest? = null
         private var wakeLock: PowerManager.WakeLock? = null
@@ -128,6 +142,15 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         private var onRepeat = false
         @Volatile private var consecutiveStreamFailures = 0
     }
+
+    // Consumed once by the next songChanged() to resume a restored session at its saved position.
+    private var pendingSeekIndex = -1
+    private var pendingSeekPosition = 0
+
+    // True only when we paused for a transient focus loss, not a user pause - gates auto-resume.
+    private var resumeOnFocusGain = false
+
+    private var positionSaveJob: Job? = null
 
     override val coroutineContext = Dispatchers.Main + SupervisorJob()
     private val binder = MusicBinder(this@MusicService)
@@ -163,6 +186,7 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         onShuffle = prefs.getBoolean(PREF_SHUFFLE, false)
         onRepeat = prefs.getBoolean(PREF_REPEAT, false)
+        restorePlaybackState(prefs)
 
         registerReceiver(
             receiver,
@@ -177,9 +201,7 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
                     build()
                 })
                 setAcceptsDelayedFocusGain(false)
-                setOnAudioFocusChangeListener {
-                    if (it == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT || it == AudioManager.AUDIOFOCUS_LOSS) pauseAudio()
-                }
+                setOnAudioFocusChangeListener { handleFocusChange(it) }
                 build()
             }
         }
@@ -266,6 +288,46 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         //exitProcess(0)
     }
 
+    private fun restorePlaybackState(prefs: SharedPreferences) {
+        if (playQueue.isNotEmpty()) return
+        val queueJson = prefs.getString(PREF_QUEUE, null) ?: return
+        val savedIndex = prefs.getInt(PREF_INDEX, -1)
+        if (savedIndex < 0) return
+        try {
+            val type = object : TypeToken<ArrayList<Song>>() {}.type
+            val queue: ArrayList<Song> = Gson().fromJson(queueJson, type) ?: return
+            if (queue.isEmpty() || savedIndex >= queue.size) return
+
+            // Stale cache file: drop it, it'll re-resolve/re-download on demand.
+            queue.forEach { song ->
+                if (song.filePath.isNotEmpty() && !File(song.filePath).exists()) {
+                    song.filePath = ""
+                }
+            }
+
+            playQueue = queue
+            currentIndex = savedIndex
+            pendingSeekIndex = savedIndex
+            pendingSeekPosition = prefs.getInt(PREF_POSITION, 0)
+        } catch (e: Exception) {
+            Log.e("ERR>", "restorePlaybackState failed: $e")
+        }
+    }
+
+    private fun persistPlaybackState(position: Int? = null) {
+        if (playQueue.isEmpty() || currentIndex !in playQueue.indices) return
+        try {
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(PREF_QUEUE, Gson().toJson(playQueue))
+                .putInt(PREF_INDEX, currentIndex)
+                .putInt(PREF_POSITION, position ?: mediaPlayer.currentPosition)
+                .apply()
+        } catch (e: Exception) {
+            Log.e("ERR>", "persistPlaybackState failed: $e")
+        }
+    }
+
     class MusicBinder(private val service: MusicService) : Binder() {
         fun getService(): MusicService {
             return service
@@ -321,6 +383,7 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
      */
     fun addToQueue(song: Song) {
         addToPlayQueue(song)
+        persistPlaybackState()
         launch(Dispatchers.Default) {
             registeredClients.forEach { it.queueChanged(playQueue) }
         }
@@ -331,6 +394,7 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
      */
     fun setQueue(queue: ArrayList<Song>) {
         playQueue = queue
+        persistPlaybackState()
         launch(Dispatchers.Default) {
             registeredClients.forEach { it.queueChanged(playQueue) }
         }
@@ -378,8 +442,10 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
      * @param state a SongState object used to play or pause audio.
      */
     fun setPlayPause(state: SongState) {
-        if (state == SongState.playing) playAudio()
-        else pauseAudio()
+        if (state == SongState.playing) {
+            // Post cold-start restore, mediaPlayer has no data source yet - load it first.
+            if (!isInstantiated) songChanged() else playAudio()
+        } else pauseAudio()
 
         launch(Dispatchers.Default) {
             registeredClients.forEach { it.playStateChanged(state) }
@@ -422,6 +488,8 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
             playQueue = ArrayList(playQueue.sortedBy { it.name.uppercase(Locale.getDefault()) })
             currentIndex = playQueue.indexOf(currSong)
         }
+
+        persistPlaybackState()
 
         launch(Dispatchers.Default) {
             registeredClients.forEach { it.queueChanged(playQueue) }
@@ -507,6 +575,13 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
             Log.w("ERR>", "songChanged called with empty/invalid queue state")
             return
         }
+
+        val seekPos = if (currentIndex == pendingSeekIndex) pendingSeekPosition else 0
+        pendingSeekIndex = -1
+        pendingSeekPosition = 0
+
+        persistPlaybackState(0)
+
         if (!isInstantiated) isInstantiated = true
         else {
             // Release and recreate instead of reset() to avoid
@@ -543,6 +618,7 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
                 launch(Dispatchers.Default) {
                     registeredClients.forEach { it.isLoading(false) }
                 }
+                if (seekPos > 0) mediaPlayer.seekTo(seekPos)
                 mediaSessionPlay()
                 setPlayPause(SongState.playing)
 
@@ -555,7 +631,7 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
                 resolveAndDownloadStream(currentIndex)
             }
         } else {
-            playSongFromFile()
+            playSongFromFile(seekPos)
         }
     }
 
@@ -610,10 +686,11 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
         }
     }
 
-    private fun playSongFromFile() {
+    private fun playSongFromFile(seekPos: Int = 0) {
         try {
             mediaPlayer.setDataSource(playQueue[currentIndex].filePath)
             mediaPlayer.prepare()
+            if (seekPos > 0) mediaPlayer.seekTo(seekPos)
 
             isLoading = false
             launch(Dispatchers.Default) {
@@ -684,6 +761,15 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
                 }
             }
 
+            if (positionSaveJob?.isActive != true) {
+                positionSaveJob = launch(Dispatchers.Default) {
+                    while (isActive) {
+                        delay(5000)
+                        persistPlaybackState()
+                    }
+                }
+            }
+
             mediaSession.setPlaybackState(
                 ps
                     .setActions(actions)
@@ -712,15 +798,20 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
     /**
      * used to pause audio play. Abandons audio focus and releases held wakelock.
      */
-    private fun pauseAudio() {
-        val audioManager =
-            getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private fun pauseAudio(abandonFocus: Boolean = true) {
+        positionSaveJob?.cancel()
+        persistPlaybackState()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            audioManager.abandonAudioFocusRequest(focusRequest!!)
-        } else {
-            @Suppress("DEPRECATION")
-            audioManager.abandonAudioFocus {}
+        if (abandonFocus) {
+            val audioManager =
+                getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                audioManager.abandonAudioFocusRequest(focusRequest!!)
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.abandonAudioFocus {}
+            }
         }
 
         if (wakeLock?.isHeld == true)
@@ -759,6 +850,14 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
      * releases the media session and wakelock and gets ready to die.
      */
     private fun cleanUp() {
+        positionSaveJob?.cancel()
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(PREF_QUEUE)
+            .remove(PREF_INDEX)
+            .remove(PREF_POSITION)
+            .apply()
+
         launch(Dispatchers.Default) {
             registeredClients.forEach(MusicClient::isExiting)
         }
@@ -945,8 +1044,33 @@ class MusicService : Service(), AudioManager.OnAudioFocusChangeListener, Corouti
     }
 
     override fun onAudioFocusChange(focusChange: Int) {
-        if (focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) pauseAudio()
-        else if (focusChange == AudioManager.AUDIOFOCUS_LOSS) cleanUp()
+        handleFocusChange(focusChange)
+    }
+
+    private fun handleFocusChange(focusChange: Int) {
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                resumeOnFocusGain = try {
+                    mediaPlayer.isPlaying
+                } catch (e: Exception) {
+                    false
+                }
+                pauseAudio(abandonFocus = false)
+            }
+
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                resumeOnFocusGain = false
+                pauseAudio(abandonFocus = true)
+            }
+
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                if (resumeOnFocusGain) {
+                    resumeOnFocusGain = false
+                    setPlayPause(SongState.playing)
+                }
+            }
+        }
     }
 
 }

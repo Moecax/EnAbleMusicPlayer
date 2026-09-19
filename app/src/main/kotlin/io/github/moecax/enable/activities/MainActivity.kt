@@ -119,6 +119,13 @@ class MainActivity : MusicClientActivity(), Search.SongCallback {
 
         super.onCreate(savedInstanceState)
 
+        // Cold start with a persisted session: start the service so it restores state.
+        if (!Shared.serviceRunning(MusicService::class.java, this@MainActivity) &&
+            MusicService.hasPersistedPlaybackState(this@MainActivity)
+        ) {
+            startService(Intent(this@MainActivity, MusicService::class.java))
+        }
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 

@@ -66,15 +66,12 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : Worker(con
             return Result.success()
         }
 
-        val isNewer = try {
-            UpdateChecker.checkNow(applicationContext)
-        } catch (e: Exception) {
-            // Deliberately no retry: the next periodic run (2 days later)
-            // tries again naturally, respecting the rate-limit intent.
-            return Result.failure()
-        }
+        // Deliberately no retry on failure: the next periodic run (2 days
+        // later) tries again naturally, respecting the rate-limit intent.
+        val result = UpdateChecker.checkNow(applicationContext)
+        if (result == UpdateChecker.CheckResult.FAILED) return Result.failure()
 
-        if (isNewer) {
+        if (result == UpdateChecker.CheckResult.UPDATE_AVAILABLE) {
             val tag = UpdateChecker.cachedTag(applicationContext)
             if (tag != null && !UpdateChecker.alreadyNotified(applicationContext, tag)) {
                 postNotification(tag)
@@ -102,9 +99,13 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : Worker(con
             notificationManager.createNotificationChannel(channel)
         }
 
+        // CLEAR_TOP + SINGLE_TOP reuses a running MainActivity (via onNewIntent)
+        // instead of stacking a second copy on top of it.
         val contentIntent = PendingIntent.getActivity(
             context, 0,
-            Intent(context, MainActivity::class.java),
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(UpdateChecker.EXTRA_SHOW_UPDATE_DIALOG, true),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 

@@ -120,9 +120,10 @@ class MainActivity : MusicClientActivity(), Search.SongCallback {
         super.onCreate(savedInstanceState)
 
         // Cold start with a persisted session: start the service so it restores state.
-        if (!Shared.serviceRunning(MusicService::class.java, this@MainActivity) &&
-            MusicService.hasPersistedPlaybackState(this@MainActivity)
-        ) {
+        val restoringSession =
+            !Shared.serviceRunning(MusicService::class.java, this@MainActivity) &&
+                    MusicService.hasPersistedPlaybackState(this@MainActivity)
+        if (restoringSession) {
             startService(Intent(this@MainActivity, MusicService::class.java))
         }
 
@@ -206,7 +207,31 @@ class MainActivity : MusicClientActivity(), Search.SongCallback {
             override fun onServiceDisconnected(name: ComponentName) {}
         }
 
-        UpdateChecker.maybeShowDialog(this@MainActivity)
+        // The service is created asynchronously, so bindService() in onResume would still see it
+        // as not running and skip binding. Bind now; the connection lands once it's created.
+        if (restoringSession) {
+            bindService(Intent(this@MainActivity, MusicService::class.java), serviceConn, 0)
+        }
+
+        if (!handleUpdateIntent(intent)) UpdateChecker.maybeShowDialog(this@MainActivity)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUpdateIntent(intent)
+    }
+
+    /**
+     * Opened from the update notification: show the changelog right away,
+     * bypassing the 2-day dialog gate. Returns true if the dialog was handled.
+     */
+    private fun handleUpdateIntent(intent: Intent?): Boolean {
+        if (intent?.getBooleanExtra(UpdateChecker.EXTRA_SHOW_UPDATE_DIALOG, false) != true) return false
+        // Consume the extra so a recreation (e.g. rotation) doesn't show it again.
+        intent.removeExtra(UpdateChecker.EXTRA_SHOW_UPDATE_DIALOG)
+        if (UpdateChecker.hasPendingUpdate(this@MainActivity)) UpdateChecker.showDialogNow(this@MainActivity)
+        return true
     }
 
     private fun loadingEvent(loading: Boolean) {
@@ -269,7 +294,8 @@ class MainActivity : MusicClientActivity(), Search.SongCallback {
     fun songChange() {
         if (mService != null) {
             launch(Dispatchers.Main) {
-                val song = mService!!.getPlayQueue()[mService!!.getCurrentIndex()]
+                val song = mService!!.getPlayQueue()
+                    .getOrNull(mService!!.getCurrentIndex()) ?: return@launch
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     binding.bbSong.text = Html.fromHtml(
@@ -282,10 +308,12 @@ class MainActivity : MusicClientActivity(), Search.SongCallback {
 
                 binding.activitySeekbar.progress = 0
 
-                try {
-                    val duration = mService!!.getMediaPlayer().duration
-                    if (duration > 0) binding.activitySeekbar.max = duration
-                } catch (_: Exception) {}
+                if (MusicService.isPrepared) {
+                    try {
+                        val duration = mService!!.getMediaPlayer().duration
+                        if (duration > 0) binding.activitySeekbar.max = duration
+                    } catch (_: Exception) {}
+                }
             }
         }
     }

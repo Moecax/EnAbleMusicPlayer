@@ -131,4 +131,5 @@ or via the UPI address %2$s</string>
     <string name="check_updates_summary">Periodically checks GitHub for new En-able releases</string>
     <string name="check_updates_now">Check for Updates</string>
     <string name="up_to_date">You\'re up to date!</string>
+    <string name="update_check_failed">Couldn\'t check for updates. Try again later.</string>
 </resources>

@@ -28,11 +28,17 @@ object UpdateChecker {
     private const val KEY_URL = "update_cached_url"
     private const val KEY_NOTIFIED_TAG = "update_notified_tag"
     private const val KEY_DIALOG_SHOWN_AT = "update_dialog_shown_at"
+    private const val KEY_DIALOG_SHOWN_TAG = "update_dialog_shown_tag"
+
+    /** Intent extra asking MainActivity to show the changelog dialog right away. */
+    const val EXTRA_SHOW_UPDATE_DIALOG = "show_update_dialog"
 
     /** The changelog dialog is shown at most this often. */
     const val DIALOG_INTERVAL_MS = 2 * 24 * 60 * 60 * 1000L
 
     private data class CachedRelease(val tag: String, val notes: String, val url: String)
+
+    enum class CheckResult { UPDATE_AVAILABLE, UP_TO_DATE, FAILED }
 
     /** Dev/local builds never participate in update checks. */
     fun isDevBuild(): Boolean = BuildConfig.VERSION_NAME == "dev"
@@ -47,10 +53,11 @@ object UpdateChecker {
      * outcome (so stale cached data is refreshed even if it's not newer).
      * On any network/parse failure, the existing cache is left untouched.
      *
-     * Must be called off the main thread. Returns true if the fetched
-     * release is newer than the running build.
+     * Must be called off the main thread. [CheckResult.FAILED] means the
+     * check itself didn't complete (offline, rate-limited, bad response),
+     * so callers must not treat it as "up to date".
      */
-    fun checkNow(context: Context): Boolean {
+    fun checkNow(context: Context): CheckResult {
         return try {
             val request = Request.Builder()
                 .url(Constants.GITHUB_RELEASES_API)
@@ -60,7 +67,10 @@ object UpdateChecker {
                 .build()
 
             OkHttpClient().newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return false
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Update check failed: HTTP ${response.code}")
+                    return CheckResult.FAILED
+                }
                 val json = JSONObject(response.body.string())
                 val tag = json.getString("tag_name")
                 val notes = json.optString("body", "")
@@ -72,11 +82,12 @@ object UpdateChecker {
                     .putString(KEY_URL, url)
                     .apply()
 
-                VersionComparator.isNewer(tag, BuildConfig.VERSION_NAME)
+                if (VersionComparator.isNewer(tag, BuildConfig.VERSION_NAME)) CheckResult.UPDATE_AVAILABLE
+                else CheckResult.UP_TO_DATE
             }
         } catch (e: Exception) {
             Log.e(TAG, "Update check failed", e)
-            false
+            CheckResult.FAILED
         }
     }
 
@@ -85,6 +96,14 @@ object UpdateChecker {
         val cached = getCached(context) ?: return false
         return VersionComparator.isNewer(cached.tag, BuildConfig.VERSION_NAME)
     }
+
+    /**
+     * Cache-only: whether passive UI (e.g. the settings badge) should flag
+     * a pending update. Respects the automatic-checks toggle so a stale
+     * cached release doesn't linger once the user turns checks off.
+     */
+    fun shouldShowUpdateBadge(context: Context): Boolean =
+        !isDevBuild() && isEnabled(context) && hasPendingUpdate(context)
 
     /** Cache-only: the last fetched release tag, if any. */
     fun cachedTag(context: Context): String? = getCached(context)?.tag
@@ -101,30 +120,40 @@ object UpdateChecker {
 
     /**
      * Cache-only, no network. Shows the changelog dialog if a pending
-     * update exists and it hasn't been shown in the last 2 days.
+     * update exists and either it's a release the dialog hasn't covered
+     * yet, or the dialog hasn't been shown in the last 2 days.
      */
     fun maybeShowDialog(activity: Activity) {
-        if (isDevBuild() || !isEnabled(activity)) return
-        if (!hasPendingUpdate(activity)) return
+        if (!shouldShowUpdateBadge(activity)) return
+        val cached = getCached(activity) ?: return
 
         val prefs = activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastShown = prefs.getLong(KEY_DIALOG_SHOWN_AT, 0L)
-        if (System.currentTimeMillis() - lastShown < DIALOG_INTERVAL_MS) return
+        val sameRelease = prefs.getString(KEY_DIALOG_SHOWN_TAG, null) == cached.tag
+        if (sameRelease && System.currentTimeMillis() - lastShown < DIALOG_INTERVAL_MS) return
 
         showDialogNow(activity)
     }
 
-    /** Shows the changelog dialog unconditionally and stamps the shown-at timestamp. */
+    /**
+     * Shows the changelog dialog unconditionally and stamps the shown-at
+     * timestamp/tag. Also marks the release as notified, since the user
+     * has now seen it and a background notification would be redundant.
+     */
     fun showDialogNow(activity: Activity) {
+        if (activity.isFinishing || activity.isDestroyed) return
         val cached = getCached(activity) ?: return
 
         activity.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
             .putLong(KEY_DIALOG_SHOWN_AT, System.currentTimeMillis())
+            .putString(KEY_DIALOG_SHOWN_TAG, cached.tag)
+            .putString(KEY_NOTIFIED_TAG, cached.tag)
             .apply()
 
+        val notes = ReleaseNotesFormatter.toPlainText(cached.notes)
         MaterialDialog(activity).show {
             title(text = activity.getString(R.string.update_available_title, cached.tag))
-            message(text = cached.notes.ifBlank { activity.getString(R.string.update_no_notes) })
+            message(text = notes.ifBlank { activity.getString(R.string.update_no_notes) })
             positiveButton(text = activity.getString(R.string.update_now)) {
                 activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(cached.url)))
             }

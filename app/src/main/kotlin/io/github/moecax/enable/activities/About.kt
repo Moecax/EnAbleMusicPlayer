@@ -58,14 +58,19 @@ class About: AppCompatActivity() {
             thread {
                 // Manual checks bypass the 2-day gate — this is user-initiated,
                 // not the automated background poll.
-                val isNewer = UpdateChecker.checkNow(this@About)
+                val result = UpdateChecker.checkNow(this@About)
                 runOnUiThread {
+                    // The user may have left while the request was in flight.
+                    if (isFinishing || isDestroyed) return@runOnUiThread
                     binding.checkUpdatesButton.isEnabled = true
                     binding.checkUpdatesProgress.visibility = View.GONE
-                    if (isNewer) {
-                        UpdateChecker.showDialogNow(this@About)
-                    } else {
-                        Toast.makeText(this@About, R.string.up_to_date, Toast.LENGTH_SHORT).show()
+                    when (result) {
+                        UpdateChecker.CheckResult.UPDATE_AVAILABLE ->
+                            UpdateChecker.showDialogNow(this@About)
+                        UpdateChecker.CheckResult.UP_TO_DATE ->
+                            Toast.makeText(this@About, R.string.up_to_date, Toast.LENGTH_SHORT).show()
+                        UpdateChecker.CheckResult.FAILED ->
+                            Toast.makeText(this@About, R.string.update_check_failed, Toast.LENGTH_SHORT).show()
                     }
                 }
             }

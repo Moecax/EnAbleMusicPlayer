@@ -202,7 +202,7 @@ class Home : Fragment(), CoroutineScope, MusicService.MusicClient {
             updateSongList()
         }
         binding.settingsBadge.visibility =
-            if (UpdateChecker.hasPendingUpdate(requireContext())) View.VISIBLE else View.GONE
+            if (UpdateChecker.shouldShowUpdateBadge(requireContext())) View.VISIBLE else View.GONE
     }
 
     override fun onPause() {

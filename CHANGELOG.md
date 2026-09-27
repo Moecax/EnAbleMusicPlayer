@@ -5,6 +5,12 @@ from Conventional Commit subjects since the previous release. See
 [fastlane/codenames.txt](fastlane/codenames.txt) for the codename recorded
 alongside each version.
 
+## v0.1.15 — JovialCompass
+
+### Fixes
+
+- handle failed checks and format release notes
+
 ## v0.1.14 — GoldenBeacon
 
 ### Fixes

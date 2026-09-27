@@ -6,3 +6,4 @@ DistantBasin v0.1.11
 VividEmber v0.1.12
 FadedWharf v0.1.13
 GoldenBeacon v0.1.14
+JovialCompass v0.1.15

@@ -22,12 +22,16 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import io.github.inflationx.viewpump.ViewPumpContextWrapper
 import io.github.moecax.enable.AbleApplication
 import io.github.moecax.enable.R
 import io.github.moecax.enable.BuildConfig
 import io.github.moecax.enable.databinding.AboutBinding
+import io.github.moecax.enable.utils.UpdateChecker
+import kotlin.concurrent.thread
 /**
  * The about page.
  */
@@ -46,6 +50,30 @@ class About: AppCompatActivity() {
 
         binding.support.setOnClickListener {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Moecax/EnAbleMusicPlayer")))
+        }
+
+        binding.checkUpdatesButton.setOnClickListener {
+            binding.checkUpdatesButton.isEnabled = false
+            binding.checkUpdatesProgress.visibility = View.VISIBLE
+            thread {
+                // Manual checks bypass the 2-day gate — this is user-initiated,
+                // not the automated background poll.
+                val result = UpdateChecker.checkNow(this@About)
+                runOnUiThread {
+                    // The user may have left while the request was in flight.
+                    if (isFinishing || isDestroyed) return@runOnUiThread
+                    binding.checkUpdatesButton.isEnabled = true
+                    binding.checkUpdatesProgress.visibility = View.GONE
+                    when (result) {
+                        UpdateChecker.CheckResult.UPDATE_AVAILABLE ->
+                            UpdateChecker.showDialogNow(this@About)
+                        UpdateChecker.CheckResult.UP_TO_DATE ->
+                            Toast.makeText(this@About, R.string.up_to_date, Toast.LENGTH_SHORT).show()
+                        UpdateChecker.CheckResult.FAILED ->
+                            Toast.makeText(this@About, R.string.update_check_failed, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 

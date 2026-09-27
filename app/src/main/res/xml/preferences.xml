@@ -42,4 +42,12 @@
             android:targetClass="io.github.moecax.enable.activities.About"
             />
     </Preference>
+
+    <SwitchPreferenceCompat
+        android:defaultValue="true"
+        android:key="check_updates_key"
+        app:iconSpaceReserved="false"
+        android:title="@string/check_updates_title"
+        android:summary="@string/check_updates_summary"
+        />
 </PreferenceScreen>

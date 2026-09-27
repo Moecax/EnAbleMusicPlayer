@@ -120,4 +120,16 @@ or via the UPI address %2$s</string>
     <string name="downloads_waiting">Waiting…</string>
     <string name="downloads_spotify_title">Spotify Import</string>
     <string name="downloads_spotify_idle">No import in progress</string>
+    <string name="update_available_title">Update available — %1$s</string>
+    <string name="update_no_notes">No changelog provided.</string>
+    <string name="update_now">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_channel_name">Update Notifications</string>
+    <string name="update_notification_title">Update available</string>
+    <string name="update_notification_text">En-able %1$s is ready to download</string>
+    <string name="check_updates_title">Check for updates automatically</string>
+    <string name="check_updates_summary">Periodically checks GitHub for new En-able releases</string>
+    <string name="check_updates_now">Check for Updates</string>
+    <string name="up_to_date">You\'re up to date!</string>
+    <string name="update_check_failed">Couldn\'t check for updates. Try again later.</string>
 </resources>

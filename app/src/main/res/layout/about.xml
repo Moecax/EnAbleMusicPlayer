@@ -295,8 +295,28 @@
                             android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
                             tools:ignore="MissingPrefix"/>
 
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/check_updates_button"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/check_updates_now"
+                            app:backgroundTint="@color/colorAccent"
+                            android:padding="12dp"
+                            android:textSize="18sp"
+                            android:layout_gravity="center_horizontal"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                            tools:ignore="MissingPrefix"/>
 
                     </LinearLayout>
+
+                    <ProgressBar
+                        android:id="@+id/check_updates_progress"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:layout_gravity="center_horizontal"
+                        android:visibility="gone"/>
 
                 </LinearLayout>
 

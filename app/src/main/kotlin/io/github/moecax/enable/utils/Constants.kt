@@ -54,6 +54,7 @@ class Constants {
 
         const val DEEZER_API = "https://deezerdevs-deezer.p.rapidapi.com/search?q="
         const val LRCLIB_SEARCH_API = "https://lrclib.net/api/search"
+        const val GITHUB_RELEASES_API = "https://api.github.com/repos/Moecax/EnAbleMusicPlayer/releases/latest"
         const val CHANNEL_ID = "AbleMusicDownload"
     }
 }
